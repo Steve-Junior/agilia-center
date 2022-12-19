@@ -30,7 +30,7 @@
         </tr>
         @foreach ($films as $film)
             <tr>
-                <td>{{ ++$i }}</td>
+                <td>{{ $loop->iteration }}</td>
                 <td>{{ $film->name }}</td>
                 <td>{{ $film->year_of_release }}</td>
                 <td>{{ date('Y-m-d', strtotime($film->created_at)) }}</td>
@@ -55,7 +55,5 @@
             </tr>
         @endforeach
     </table>
-
-    {!! $films->links() !!}
 
 @endsection

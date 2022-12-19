@@ -20,6 +20,19 @@ class FilmController extends Controller
         $this->middleware('auth');
     }
 
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function allIndex()
+    {
+        $films = Film::with(['categories', 'user'])->latest()->paginate(1);
+
+        return view('manage.index', compact('films'));
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -27,10 +40,9 @@ class FilmController extends Controller
      */
     public function index()
     {
-        $films = Film::with('categories')->latest()->paginate(10);
+        $films = Film::with('categories')->where('user_id', auth()->id())->latest()->get();
 
-        return view('film.index', compact('films'))
-            ->with('i', (request()->input('page', 1) - 1) * 10);
+        return view('film.index', compact('films'));
     }
 
     /**
@@ -96,7 +108,12 @@ class FilmController extends Controller
      */
     public function show(Film $film)
     {
-        return view('film.show', compact('film'));
+        if($film->user_id == auth()->id())
+        {
+            return view('film.show', compact('film'));
+        }
+
+        abort(401);
     }
 
     /**
@@ -107,9 +124,14 @@ class FilmController extends Controller
      */
     public function edit(Film $film)
     {
-        $selectedCategoryIds = $film->categories->pluck('id');
-        $unselectedCategories = Category::all()->whereNotIn('id', $selectedCategoryIds->toArray());
-        return view('film.edit', compact('film', 'unselectedCategories'));
+        if($film->user_id == auth()->id())
+        {
+            $selectedCategoryIds = $film->categories->pluck('id');
+            $unselectedCategories = Category::all()->whereNotIn('id', $selectedCategoryIds->toArray());
+            return view('film.edit', compact('film', 'unselectedCategories'));
+        }
+
+        abort(401);
     }
 
     /**
@@ -121,6 +143,11 @@ class FilmController extends Controller
      */
     public function update(Request $request, Film $film)
     {
+        if($film->user_id !== auth()->id())
+        {
+            abort(401);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'category_id' => 'required',
@@ -163,6 +190,11 @@ class FilmController extends Controller
      */
     public function destroy(Film $film)
     {
+        if($film->user_id !== auth()->id())
+        {
+            abort(401);
+        }
+
         $film->categories()->detach();
 
         $image_path = public_path().'/'.$film->cover_image_url;
